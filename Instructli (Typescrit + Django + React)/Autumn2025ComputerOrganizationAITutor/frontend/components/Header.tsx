@@ -13,6 +13,9 @@ export default function Header() {
     if (pathname.includes('/single-processor')) return 'single-processor';
     if (pathname.includes('/pipeline-processor')) return 'multi-stage-processor';
     if (pathname.includes('/summaries')) return 'conversation-journal';
+    if (pathname.includes('/quiz')) return 'quiz';
+    if (pathname.includes('/instructor')) return 'instructor';
+    if (pathname.includes('/arithmetic')) return 'arithmetic-module';
     if (pathname.includes('/stats')) return 'student-stats';
     if (pathname.includes('/')) return '';
     return '';
@@ -101,6 +104,15 @@ export default function Header() {
         break;
       case 'conversation-journal':
         router.push('/summaries');
+        break;
+      case 'quiz':
+        router.push('/quiz');
+        break;
+      case 'instructor':
+        router.push('/instructor');
+        break;
+      case 'arithmetic-module':
+        router.push('/arithmetic');
         break;
       case 'student-stats':
         router.push('/stats');
@@ -208,15 +220,38 @@ export default function Header() {
                 <div className="absolute bottom-0 left-1/2 transform -translate-x-1/2 w-26 h-0.5 bg-[#f3f3f3] translate-y-[-20px]" />
               )}
             </button>
-            {isInstructor && (
-              <button
-              onClick={() => handleTabChange("student-stats")}
+            <button
+              onClick={() => handleTabChange("quiz")}
               className={`px-4 h-full text-sm font-medium transition-colors focus:outline-none flex flex-col justify-center relative cursor-pointer hover:text-[#f3f3f3] ${
-                activeTab === "student-stats" ? "text-[#f3f3f3]" : "text-[#f3f3f3]/80"
+                activeTab === "quiz" ? "text-[#f3f3f3]" : "text-[#f3f3f3]/80"
               } active:bg-[#2a3d5a] active:shadow-[inset_0_0_0_4px_#f3f3f3]`}
             >
-              <span>Student Stats</span>
-              {activeTab === "student-stats" && (
+              <span>Check For Understanding</span>
+              {activeTab === "quiz" && (
+                <div className="absolute bottom-0 left-1/2 transform -translate-x-1/2 w-38 h-0.5 bg-[#f3f3f3] translate-y-[-20px]" />
+              )}
+            </button>
+            <button
+                onClick={() => handleTabChange("arithmetic-module")}
+                className={`px-4 h-full text-sm font-medium transition-colors focus:outline-none flex flex-col justify-center relative cursor-pointer hover:text-[#f3f3f3] ${
+                  activeTab === "arithmetic-module" ? "text-[#f3f3f3]" : "text-[#f3f3f3]/80"
+                } active:bg-[#2a3d5a] active:shadow-[inset_0_0_0_4px_#f3f3f3]`}
+              >
+                <span>Learn Arithmetics</span>
+                {activeTab === "arithmetic-module" && (
+                  <div className="absolute bottom-0 left-1/2 transform -translate-x-1/2 w-28 h-0.5 bg-[#f3f3f3] translate-y-[-20px]" />
+                )}
+              </button>
+
+            {isInstructor && (
+              <button
+              onClick={() => handleTabChange("instructor")}
+              className={`px-4 h-full text-sm font-medium transition-colors focus:outline-none flex flex-col justify-center relative cursor-pointer hover:text-[#f3f3f3] ${
+                activeTab === "instructor" ? "text-[#f3f3f3]" : "text-[#f3f3f3]/80"
+              } active:bg-[#2a3d5a] active:shadow-[inset_0_0_0_4px_#f3f3f3]`}
+            >
+              <span>Instructor Dashboard</span>
+              {activeTab === "instructor" && (
                 <div className="absolute bottom-0 left-1/2 transform -translate-x-1/2 w-26 h-0.5 bg-[#f3f3f3] translate-y-[-20px]" />
               )}
             </button>

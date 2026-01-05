@@ -1,0 +1,4 @@
+The code is written with the help of the following resources:
+
+- Django REST Framework documentation: https://www.django-rest-framework.org/
+- Generative AI (Code were evaluated and improved by human)

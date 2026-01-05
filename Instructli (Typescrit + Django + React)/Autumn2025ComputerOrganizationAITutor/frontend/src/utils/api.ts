@@ -1,8 +1,8 @@
 import axios, {AxiosInstance} from "axios";
 import { getAccessToken, refreshAccessToken, clearTokens } from "./token";
 
-export const URL = "https://api.instructli.app";
-// export const URL = "http://localhost:8000";
+// export const URL = "https://api.instructli.app";
+export const URL = "http://localhost:8000";
 
 const api: AxiosInstance = axios.create({
     baseURL: URL,

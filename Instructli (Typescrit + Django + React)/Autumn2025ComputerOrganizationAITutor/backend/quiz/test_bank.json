@@ -1,0 +1,156 @@
+[
+ {
+   "question_string": "Convert $1#random_hex_len(4)# into binary number.",
+   "type": "short_answer",
+   "answer": "#hex_to_binary($1)#",
+   "tag": [
+     "arithmetic",
+     "two's complement"
+   ],
+   "difficulty": "easy",
+   "is_published": true
+ },
+ {
+   "question_string": "Convert $1#random_hex_len(4)# into decimal number.",
+   "type": "short_answer",
+   "answer": "#hex_to_decimal($1)#",
+   "tag": [
+     "numeric representation"
+   ],
+   "difficulty": "easy",
+   "is_published": true
+ },
+ {
+   "question_string": "Convert $1#random_hex_len(4)# into octal number.",
+   "type": "short_answer",
+   "answer": "#hex_to_octal($1)#",
+   "tag": [
+     "numeric representation" 
+   ],
+   "difficulty": "easy",
+   "is_published": true
+ },
+ {
+   "question_string": "Convert $1#random_binary_len(9)# into decimal number.",
+   "type": "short_answer",
+   "answer": "#binary_to_decimal($1)#",
+   "tag": [
+     "numeric representation"
+   ],
+   "difficulty": "easy",
+   "is_published": true
+ },
+ {
+   "question_string": "Convert $1#random_decimal_len(3)# into binary number.",
+   "type": "short_answer",
+   "answer": "#decimal_to_binary($1)#",
+   "tag": [
+     "numeric representation"
+   ],
+   "difficulty": "easy",
+   "is_published": true
+ },
+ {
+   "question_string": "Convert $1#random_between(-32, 20)# into $2#random_between(6, 8)#-bit two's complement binary representation.",
+   "type": "short_answer",
+   "answer": "#decimal_to_two_complement($1, $2)#",
+   "tag": [
+     "numeric representation"
+   ],
+   "difficulty": "easy",
+   "is_published": true
+ },
+ {
+   "question_string": "Provide decimal representation of $1#random_negative_binary_len(8)# in two's complement.",
+   "type": "short_answer",
+   "answer": "#two_complement_to_decimal($1)#",
+   "tag": [
+     "numeric representation"
+   ],
+   "difficulty": "easy",
+   "is_published": true
+ },
+ {
+   "question_string": "Calculate $1#random_hex_len(4)# - $2#random_hex_len(4)# when these values represent unsigned 16-bit hexadecimal numbers. Give your answer in hexadecimal assuming unsaturated arithmetic.",
+   "type": "short_answer",
+   "answer": "#hex_subtraction($1, $2)#",
+   "tag": [
+     "arithmetic"
+   ],
+   "difficulty": "medium",
+   "is_published": true
+ },
+ {
+   "question_string": "Assume $1#random_between(180, 200)# and $2#random_between(120, 137)# are signed 8-bit decimal integers stored in sign-magnitude format. Calculate $1 + $2 in decimal.",
+   "type": "short_answer",
+   "answer": "#sign_magnitude_addition_decimal($1, $2)#",
+   "tag": [
+     "arithmetic"
+   ],
+   "difficulty": "medium",
+   "is_published": true
+ },
+ {
+   "question_string": "Assume $1#random_between(180, 200)# and $2#random_between(120, 137)# are signed 8-bit decimal integers stored in sign-magnitude format. Calculate $1 - $2 in decimal.",
+   "type": "short_answer",
+   "answer": "#sign_magnitude_subtraction_decimal($1, $2)#",
+   "tag": [
+     "arithmetic"
+   ],
+   "difficulty": "medium",
+   "is_published": true
+ },
+ {
+   "question_string": "Assume $1#random_between(180, 200)# and $2#random_between(120, 137)# are signed 8-bit decimal integers stored in two's complement format. Calculate $1 - $2 in decimal.",
+   "type": "short_answer",
+   "answer": "#two_complement_subtraction_decimal($1, $2)#",
+   "tag": [
+     "arithmetic",
+     "overflow"
+   ],
+   "difficulty": "medium",
+   "is_published": true
+ },
+ {
+   "question_string": "Present the hexadecimal representation of the following assembly instruction: add x$1#random_between(20, 30)#, x$2#random_between(20, 30)#, x$3#random_between(20, 30)#. Answer in hexadecimal.",
+   "type": "short_answer",
+   "answer": "#instruction_represent(add, x$1, x$2, x$3)#",
+   "tag": [
+     "instruction representation"
+   ],
+   "difficulty": "easy",
+   "is_published": true
+ },
+ {
+   "question_string": "Present the hexadecimal representation of the following assembly instruction: lb x$1#random_between(20, 30)#, $3#random_between(0, 100)#(x$2#random_between(20, 30)#). Answer in hexadecimal.",
+   "type": "short_answer",
+   "answer": "#instruction_represent(lb, x$1, x$2, $3)#",
+   "tag": [
+     "instruction representation"
+   ],
+   "difficulty": "easy",
+   "is_published": true
+ },
+ {
+   "question_string": "Present the hexadecimal representation of the following assembly instruction: sb x$1#random_between(20, 30)#, $3#random_between(0, 100)#(x$2#random_between(20, 30)#). Answer in hexadecimal.",
+   "type": "short_answer",
+   "answer": "#instruction_represent(sb, x$1, x$2, $3)#",
+   "tag": [
+     "instruction representation"
+   ],
+   "difficulty": "easy",
+   "is_published": true
+ },
+ {
+   "question_string": "Present the hexadecimal representation of the following assembly instruction: beq x$1#random_between(20, 30)#, x$2#random_between(20, 30)#, $3#random_between(0, 100, 4)#. Answer in hexadecimal.",
+   "type": "short_answer",
+   "answer": "#instruction_represent(beq, x$1, x$2, $3)#",
+   "tag": [
+     "instruction representation"
+   ],
+   "difficulty": "easy",
+   "is_published": true
+ }
+]
+
+

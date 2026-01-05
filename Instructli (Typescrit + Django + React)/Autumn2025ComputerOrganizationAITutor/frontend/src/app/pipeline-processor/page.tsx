@@ -8,10 +8,49 @@ const PipeLineTerminal = dynamic(
   () => import("../../../components-processor/PipeLineTerminal"),
   { ssr: false }
 );
-
+import api, { URL } from "../../utils/api";
 import PipelineProcessor from "../../../components-processor/PipelineProcessor";
 import { PipelineState } from "../../utils/pipeline-types"
 import Chatbot from "../../../components/ChatBot";
+import { register } from "module";
+
+export interface PipelineStage {
+  cycle: number;
+  IF?: string;
+  ID?: string;
+  EX?: string;
+  MEM?: string;
+  WB?: string;
+  ex_branch_condition?: boolean
+  mem_branch_condition?: boolean
+}
+
+export interface PipelineInfo {
+  api: number;
+  cycles: number;
+  instructions_retired: number;
+  ipc: number;
+  pipeline_state: PipelineStage[];
+  register_values: Record<string, number>;
+}
+
+export interface PipelineResponse {
+  status: string;
+  info: PipelineInfo;
+}
+
+function parseRegisterValue(register_values: Record<string, number> | null){
+  if (register_values === null) return "" 
+  const nonZero = Object.entries(register_values)
+    .filter(([_, value]) => value !== 0)
+    .map(([key, value]) => `${key}=${value}`);
+
+  if (nonZero.length === 0) {
+    return "all registers are 0";
+  }
+
+  return `${nonZero.join(', ')} and all other registers are 0`;
+}
 
 export default function Home() {
   const MIN_CHATBOT_WIDTH = 540;  // Minimum width in pixels
@@ -22,8 +61,11 @@ export default function Home() {
   const [chatbotWidth, setChatbotWidth] = useState(MIN_CHATBOT_WIDTH); // Default width
   const [isDragging, setIsDragging] = useState(false);
   const [currentPreset, setCurrentPreset] = useState<{index: number, note: string} | null>(null);
-
-  
+  const [asmCode, setAsmCode] = useState("");
+  const [processorType, setProcessorType] = useState("RV32_5S");
+  const [dynamicStageInfo, setDynamicStageInfo] = useState<PipelineResponse | null>(null);
+  const [compilationError, setCompilationError] = useState("")
+  const [registerInit, setRegisterInit] = useState("");
   const getMaxChatbotWidth = () => Math.max(MIN_CHATBOT_WIDTH, window.innerWidth - MIN_CONTENT_WIDTH);
 
   const handleBackward = (currCycle: number) => {
@@ -36,11 +78,13 @@ export default function Home() {
 
   // sends terminal code to multiCycle using fetch
   const handleExecute = async (preset: number) => {
+    if (preset == 4 && dynamicStageInfo == null){
+      setCompilationError("You need to compile first.")
+      return
+    }
     const newCycle = currCycle + 1;
-    // console.log("preset index", preset)
-    // console.log(newCycle)
     setCurrCycle(newCycle)
-    const data = handlePipeLinePreset(preset)
+    const data = handlePipeLinePreset(preset, dynamicStageInfo, setCompilationError)
     setResults(data)
     if (currCycle >= data[data.length - 1].cycle){
       setCurrCycle(0)
@@ -48,8 +92,6 @@ export default function Home() {
 
     localStorage.setItem("pipelineDiagram", JSON.stringify(data));
     localStorage.setItem("currCycle", JSON.stringify(newCycle%(data[data.length - 1].cycle +1)));
-    // console.log("CYCLE: ", newCycle%(data[data.length - 1].cycle +1))
-
     /*try {
       setBranchToggled(false)
       const instructions = code
@@ -114,6 +156,37 @@ export default function Home() {
     setIsDragging(false);
   };
 
+  const handleCompile = async () => {
+    handleReset();
+    if (asmCode == "" || asmCode == " "){
+      setCompilationError("You code is empty. Please enter some instructions")
+      return
+    }
+    try {
+      const response = await api.post("/api/processor/run/", {
+        asm_code: asmCode,
+        proc: processorType,
+        register_init: registerInit
+      });
+
+      if (response.status >= 200 && response.status < 300) {
+        const stages = response.data;
+        setCompilationError("")
+        setDynamicStageInfo(stages)
+        setCurrentPreset(prev => ({
+          ...(prev ?? { index: 4, note: "You can enter your code." }), // default if null
+          note: `You can enter your code. After execution, ${parseRegisterValue(stages.info.register_values)}`
+        }));
+      }
+    } catch (error: any){
+      if (error.response){
+        setCompilationError(error.response.data.info.error)
+      }
+    }
+
+  };
+
+
   // Add event listeners for mouse move and up
   useEffect(() => {
     const handleGlobalMouseMove = (e: MouseEvent) => handleMouseMove(e);
@@ -147,6 +220,14 @@ export default function Home() {
           onReset={handleReset}
           currCycle={currCycle}
           onPresetChange={setCurrentPreset}
+          asmCode={asmCode}
+          onAsmCodeChange={setAsmCode}
+          onCompile={handleCompile}
+          processorType={processorType}
+          onProcessorChange={setProcessorType}
+          compilationError={compilationError}
+          registerInit={registerInit}
+          setRegisterInit={setRegisterInit}
         />
         </div>
       </main>

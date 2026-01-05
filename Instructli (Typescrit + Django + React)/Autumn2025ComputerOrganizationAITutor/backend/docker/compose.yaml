@@ -28,9 +28,9 @@ services:
     depends_on:
       r2r:
         condition: service_healthy
+      
   postgres:
     image: pgvector/pgvector:pg16
-    profiles: [postgres]
     env_file:
       - ./env/postgres.env
     volumes:
@@ -48,7 +48,7 @@ services:
       -c max_connections=1024
 
   hatchet-postgres:
-    image: postgres:latest
+    image: postgres:16
     env_file:
       - ./env/hatchet.env
     volumes:

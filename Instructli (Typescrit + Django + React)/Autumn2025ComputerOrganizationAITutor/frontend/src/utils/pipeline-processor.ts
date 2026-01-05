@@ -1,13 +1,390 @@
 import { instructionTypeMap, CommandType, PipelineState, IFPath,
      IDPath, EXPath, MEMPath, WBPath, IFComponents, IDComponents, EXComponents, MEMComponents} from "./pipeline-types";  
-
-
+import {PipelineResponse} from "@/app/pipeline-processor/page"
+import { stageIFTable, stageIDTable, stageEXTable, stageMEMTable, stageWBTable, componentIFTable, componentEXTable } from "./configurationTable";
 type PipelineStage = 'IF' | 'ID' | 'EX' | 'MEM' | 'WB';
 const pipelinestates = ['IF', 'ID', 'EX', 'MEM', 'WB'];
 
 
+function stageIF(instruction: string|undefined, setCompilationError: (s: string) => void){
+  if (instruction === undefined) return undefined
+  const firstWord = instruction.split(" ")[0];
+  if (firstWord == "bubble" || firstWord == "") return undefined;
+  if (firstWord == "Unknown") {
+    setCompilationError("Invalid! You are trying to modify bytes at the address of the instruction.")
+    return undefined
+  } 
+  if (firstWord === "jal" || firstWord == "jalr" || componentIFTable[firstWord].type == "B"){
+    return stageIFTable.beq;
+  }
+  return stageIFTable[firstWord as keyof typeof stageIFTable] ?? stageIFTable.add;
+}
 
-export function handlePipeLinePreset(index: number): PipelineState[] | never{
+function stageID(instruction: string|undefined){
+  if (instruction === undefined) return undefined
+  const firstWord = instruction.split(" ")[0];
+  if (firstWord == "bubble" || firstWord == "") return undefined;
+  const intrType = componentIFTable[firstWord].type;
+  if (intrType !== null) {
+    if (componentIFTable[firstWord].jump == true){
+      return stageIDTable.JI
+    }
+    return stageIDTable[intrType]
+  };
+  return undefined
+}
+
+function stageEX(instruction: string|undefined){
+  if (instruction === undefined) return undefined
+  const firstWord = instruction.split(" ")[0];
+  if (firstWord == "bubble" || firstWord == "") return undefined;
+  const intrType = componentIFTable[firstWord].type;
+  if (intrType !== null) {
+    if (componentIFTable[firstWord].jump == true){
+      return stageEXTable.JI
+    }
+    return stageEXTable[intrType]
+  };
+  return undefined;
+}
+
+function stageMEM(instruction: string|undefined){
+  if (instruction === undefined) return undefined
+  const firstWord = instruction.split(" ")[0];
+  if (firstWord == "bubble" || firstWord == "") return undefined;
+  if (["lw", "lh", "lb", "lbu", "lhu"].includes(firstWord)) return stageMEMTable.lw
+  const intrType = componentIFTable[firstWord].type;
+  if (intrType !== null) return stageMEMTable[intrType];
+  return undefined;
+}
+
+function stageWB(instruction: string|undefined){
+  if (instruction === undefined) return undefined
+  const firstWord = instruction.split(" ")[0];
+  if (firstWord == "bubble" || firstWord == "") return undefined;
+  if (["lw", "lh", "lb", "lbu", "lhu"].includes(firstWord)) return stageWBTable.lw
+  const intrType = componentIFTable[firstWord].type;
+  if (intrType !== null) return stageWBTable[intrType];
+  return undefined;
+}
+
+function componentIF(instruction: string|undefined, pc: string|undefined){
+  if (instruction === undefined && pc === undefined) return undefined
+  if (instruction === undefined){
+    return {
+        pc: { value: `PC = PC + ${pc}`, comment: `Program Counter (PC): Holds the address of the current instruction. The instruction is fetched using the current PC value, then PC is updated to PC + ${pc} to point to the next sequential instruction address.` },
+        instruction_mem: { value: `None`, comment: `Instruction Memory: Stores program instructions. Outputs the fetched an instruction (at current PC address) for decoding and execution` },
+        default_adder: {value: `Adds ${pc} to the current PC value to get the address of the next instruction.`}
+    }
+  }
+  const firstWord = instruction.split(" ")[0];
+  if (firstWord == "bubble") return undefined
+  const type = componentIFTable[firstWord].type;
+  return {
+        pc: { value: `PC = PC + ${pc}`, comment: `Program Counter (PC): Holds the address of the current instruction. The instruction is fetched using the current PC value, then PC is updated to PC + ${pc} to point to the next sequential instruction address.` },
+        instruction_mem: { value: `${instruction}`, comment: `Instruction Memory: Stores program instructions. Outputs the fetched ${type}-type instruction (at current PC address) for decoding and execution` },
+        default_adder: {value: `Adds ${pc} to the current PC value to get the address of the next instruction.`}
+    }
+}
+
+function componentID(instruction: string|undefined){
+    if (instruction === undefined) return undefined;
+    const parts = instruction.replace(/,/g, '').trim().split(/\s+/);
+    const op = parts[0];
+    const args = parts.slice(1);
+    if (op == "bubble") return undefined
+    const type = componentIFTable[op].type;
+     // ----- R-Type -----
+    if (type === "R") {
+      const [rd, rs1, rs2] = args;
+      return {
+        registers: {
+          read_register_1: { value: `Val(${rs1})`, comment: `Read Register 1: Reads value from source register ${rs1}` },
+          read_register_2: { value: `Val(${rs2})`, comment: `Read Register 2: Reads value from source register ${rs2}` },
+          write_register: { value: `${rd}`, comment: `Write Register: Destination register for ALU resul ${rd}` },
+        }
+      }
+    }
+    // ----- I-Type -----
+    else if (type === "I") {
+      if (["lw", "lh", "lb", "lbu", "lhu"].includes(op)){
+        const [rd, imm, rs1] = args;
+        return {
+            registers: {
+              read_register_1: { value: `Val(${rs1})`, comment: `Read Register 1: Reads value from source register ${rs1}.` },
+              read_register_2: { value: 'N/A', comment: 'Read Register 2: Not used in immediate instruction' },
+              write_register: { value: `Val(${rd})`, comment: `Write Register: Destination register ${rd} for immediate operation result` },
+            },
+            imm_gen: { value: `Extracts and sign-extends the immediate value from the instruction for use in address calculation.\nInput: The instruction: ${instruction}\nOutput: The immediate: ${imm}.`},
+          }
+      } else{
+        const [rd, rs1, imm] = args;
+        return {
+            registers: {
+              read_register_1: { value: `Val(${rs1})`, comment: `Read Register 1: Reads value from source register ${rs1}.` },
+              read_register_2: { value: 'N/A', comment: 'Read Register 2: Not used in immediate instruction' },
+              write_register: { value: `Val(${rd})`, comment: `Write Register: Destination register ${rd} for immediate operation result` },
+            },
+            imm_gen: { value: `Extracts and sign-extends the immediate value from the instruction for use in immediate calculation.\nInput: The instruction: ${instruction}\nOutput: The immediate: ${imm}.`},
+          }
+      }
+    }
+
+    // ----- B-Type -----
+    else if (type === "B") {
+      const [rs1, rs2, imm] = args;
+      return {
+          registers: {
+            read_register_1: { value: `Val(${rs1})`, comment: `Read Register 1: Reads value from register ${rs1} for branch comparison` },
+            read_register_2: { value: `Val(${rs2})`, comment: `Read Register 2: Reads value from register ${rs2} for branch comparison` },
+            write_register: { value: 'N/A', comment: 'Write Register: No write register' },
+          },
+          imm_gen: { value: `Extracts and sign-extends the immediate value from the instruction for use in branch target calculation.\nInput: The instruction: ${instruction}\nOutput: ${imm}.`},
+        }
+    }
+      // ----- S-Type -----
+    else if (type === "S") {
+      // sw x5, 16(x6)
+      const [rs2, imm, rs1] = args;
+      return {
+        registers: {
+          read_register_1: { value: `Val(${rs1})`, comment: `Read Register 1: Reads value from source register ${rs1}` },
+          read_register_2: { value: `Val(${rs2})`, comment: `Read Register 2: Reads value from source register ${rs2}` },
+          write_register: { value: 'N/A', comment: 'Write Register: No write register' },
+        },
+        imm_gen: { value: `Extracts and sign-extends the immediate value from the instruction for use in branch target calculation.\nInput: The instruction: ${instruction}\nOutput: ${imm}.`},
+      }
+    }
+
+    // ----- U-Type -----
+    else if (type == "U"){
+      const [rd, imm] = args;
+        return {
+            registers: {
+              read_register_1: { value: `N/A`, comment: `Read Register 1: Not used in U-type instruction.` },
+              read_register_2: { value: 'N/A', comment: 'Read Register 2: Not used in immediate instruction' },
+              write_register: { value: `Val(${rd})`, comment: `Write Register: Destination register ${rd} for immediate operation result` },
+            },
+            imm_gen: { value: `Extracts and sign-extends the immediate value from the instruction for use in immediate calculation.\nInput: The instruction: ${instruction}\nOutput: The immediate: ${imm}.`},
+          }
+      }
+    // ----- J-Type -----
+    else if (type == "J"){
+      const [rd, imm] = args;
+        return {
+            registers: {
+              read_register_1: { value: `N/A`, comment: `Read Register 1: Not used in J-type instruction.` },
+              read_register_2: { value: 'N/A', comment: 'Read Register 2: Not used in immediate instruction' },
+              write_register: { value: `Val(${rd})`, comment: `Write Register: Destination register ${rd} for immediate operation result` },
+            },
+            imm_gen: { value: `Extracts and sign-extends the immediate value from the instruction for use in immediate calculation.\nInput: The instruction: ${instruction}\nOutput: The immediate: ${imm}.`},
+          }
+      }
+    return undefined
+}
+
+function componentEX(instruction: string|undefined){
+    if (instruction === undefined) return undefined;
+    const parts = instruction.replace(/,/g, '').trim().split(/\s+/);
+    const op = parts[0];
+    const args = parts.slice(1);
+    if (op == "bubble") return undefined
+    const type = componentIFTable[op].type
+    const operation = componentEXTable[op].operation;
+    const operationName = componentEXTable[op].operationName
+     // ----- R-Type -----
+    if (type === "R") {
+      const [rd, rs1, rs2] = args;
+      if (operation == "(rs1 < rs2)?1:0"){
+        return {
+          alu: { alu_result: `ALU: Performs ${operationName} operation to compare Val(${rs1}) and Val(${rs2})→ ${rd} = (${rs1}<${rs2})>1:0.` }
+        }
+      }
+      return {
+          alu: { alu_result: `ALU: Performs ${operationName} operation → Val(${rs1}) ${operation} Val(${rs2}).` }
+        }
+    }
+    // ----- I-Type -----
+    else if (type === "I") {
+      if (op === "li") {
+        const [rd, imm] = args;
+        return {
+          alu: { alu_result: `ALU: Performs ${operationName} operation → Val(x0) ${operation} ${imm}.` }
+        }
+      }else if (operation == "(rs1 < imm)?1:0"){
+        const [rd, rs1, imm] = args;
+        return {
+          alu: { alu_result: `ALU: Performs ${operationName} operation to compare Val(${rs1}) and ${imm}→ ${rd} = (${rs1}<${imm})>1:0.` }
+        }
+      } else if (["lw", "lh", "lb", "lbu", "lhu"].includes(op)) {
+        const [rd, imm, rs1] = args;
+        return {
+          alu: { alu_result: `ALU: Performs ${operationName} operation to calculate the address→ Val(${rs1}) ${operation} ${imm}.` }
+        }
+      }
+      else {
+        const [rd, rs1, imm] = args;
+        return {
+          alu: { alu_result: `ALU: Performs ${operationName} operation → Val(${rs1}) ${operation} ${imm}.` }
+        }
+      }
+    }
+
+    // ----- B-Type -----
+    else if (type === "B") {
+      const [rs1, rs2, imm] = args;
+      const immVal = parseInt(imm, 10); // convert imm to integer
+      return {
+          alu: { alu_result: `ALU: Branch comparison → ${rs1} ${operation} ${rs2}. If the condition is true, branch taken to PC + ${2*immVal}. Zero line highlighted representing that Branch condition holds` },
+          branch_adder: {value: `Calculates the branch target address by adding immediate to the incremented PC value.\nInput: Current PC and immediate value is ${imm} but shifted 1 which is ${2*immVal}\nOutput: Target PC = PC + ${2*immVal}`}
+        }
+    }
+      // ----- S-Type -----
+    else if (type === "S") {
+      // sw x5, 16(x6)
+        const [rd, imm, rs1] = args;
+        return {
+          alu: { alu_result: `ALU: Performs ${operationName} operation → Val(${rs1}) ${operation} ${imm} (address calculation).` }
+        }
+    }
+
+    // ----- U-Type -----
+    else if (type === "U") {
+        const [rd, imm] = args;
+        return {
+          alu: { alu_result: `ALU: Performs ${operationName} operation → ${imm} ${operation} 12.` }
+        }
+    }
+    // ----- J-Type -----
+    else if (type === "J") {
+      const [rd, imm] = args;
+      return {
+        alu: { alu_result: `ALU: For J-type instruction, the ALU take 4 immediate from ID/EX and PC from ID/EX. It adds PC to 4 → PC + 4` }
+      }
+    }
+
+  return undefined
+}
+
+function componentMEM(instruction: string|undefined){
+  if (instruction === undefined) return undefined;
+  const parts = instruction.replace(/,/g, '').trim().split(/\s+/);
+  const op = parts[0];
+  const args = parts.slice(1);
+  if (op == "bubble") return undefined
+  const type = componentIFTable[op].type
+  // ----- I-Type -----
+  if (type === "I") {
+    if (op === "lw" || op === "lh" || op === "lb") {
+      const [rd, imm, rs1] = args;
+      return {
+        data_memory: { read_data: `Read Data: Read from address Val(${rs1}) + ${imm} to ${rd}.`, write_data: 'Write Data: No data written to memory.' }
+      }
+    }
+    else {
+      return {
+        data_memory: { read_data: `Read Data: No data read from memory.`, write_data: `Write Data: No data written to memory.` }
+      }
+    }
+  }
+    // ----- S-Type -----
+  else if (type === "S") {
+    // sw x5, 16(x6)
+    const [rs2, imm, rs1] = args;
+    return {
+        data_memory: { read_data: `Read Data: No data read from memory.`, write_data: `Write Data: Store Val(${rs2}) at address ${rs1} + ${imm}.` }
+      }
+  }
+  else{
+    return {
+      data_memory: { read_data: `Read Data: No data read from memory.`, write_data: `Write Data: No data written to memory.` }
+    }
+  }
+  // // ----- U-Type -----
+  // // ----- J-Type -----
+  return undefined
+}
+
+function componentWB(instruction: string|undefined){
+  return undefined
+}
+
+function pipelineConvertResponseToDiagram(pipelineStates: PipelineState[], dynamicsStage: PipelineResponse|null, setCompilationError: (s: string) => void){
+  if (dynamicsStage === null) return undefined;
+  dynamicsStage.info.pipeline_state.forEach(element => {
+    
+    const obj ={
+      cycle: element.cycle,
+      stages: {IF: element.IF, ID: element.ID, EX: element.EX, MEM: element.MEM, WB: element.WB},
+      hazards: [],
+      stageDetails:{
+        IF: stageIF(element.IF, setCompilationError),
+        ID: stageID(element.ID),
+        EX: stageEX(element.EX),
+        MEM: stageMEM(element.MEM),
+        WB: stageWB(element.WB)
+      },
+      component:{
+        IF: componentIF(element.IF, "4"),
+        ID: componentID(element.ID),
+        EX: componentEX(element.EX),
+        MEM: componentMEM(element.MEM),
+        WB: componentWB(element.WB),
+      }
+    }
+    if (element.ex_branch_condition === true){
+      if (obj.stageDetails.EX) {
+        obj.stageDetails.EX.zero_mem = true;
+      }
+    }
+    if (element.mem_branch_condition === true){
+      if (obj.stageDetails.MEM) {
+        obj.stageDetails.MEM.zero_mem2 = true;
+      }
+      obj.stageDetails.IF = {
+          branch_taken: true,
+          mux_pc: true,
+          pc_increment: false,
+          pc_default: false,
+          pc_id: false,
+          pc_im: true,
+          im_id: true
+        }
+      if (element.MEM !== undefined){
+        const branch_offset = element.MEM.split(" ").pop();
+        obj.component.IF = componentIF(element.IF, branch_offset)
+        if (element.MEM !== undefined && element.MEM.split(" ")[0] == "jalr" && obj.component.IF !== undefined){
+          const parts = element.MEM.replace(/,/g, '').trim().split(/\s+/);
+          const args = parts.slice(1);
+          const rs1 = args[1];
+          const imm = args[2]
+          obj.component.IF.pc = { value: `PC = Val(${rs1}) + ${imm}`, comment: `Program Counter (PC): Holds the address of the current instruction. The instruction is fetched using the current PC value, then PC is updated to Val(${rs1}) + ${imm} to point to the next sequential instruction address.` }
+        }
+      }
+    }
+    if (element.WB != undefined && element.WB != null && element.WB.split(" ")[0] !== "bubble"){
+      const instr = element.WB.split(" ")[0]
+      const rd = element.WB.split(" ")[1]
+      if (componentIFTable[instr].type == "I" || componentIFTable[instr].type == "R" || componentIFTable[instr].type == "U" || instr == "jal" || instr == "jalr"){
+        if (obj.component.ID == undefined){
+          obj.component.ID = {
+            registers: {
+              read_register_1: {value: 'N/A', comment: "Read Register 1: Not used in this stage"},
+              read_register_2: { value: 'N/A', comment: 'Read Register 2: Not used in this stage' },
+              write_register: { value: `N/A`, comment: `Write Data: \nNote that ${rd} is now written back.\n\n` }
+            }
+          }
+        }
+        else{
+          obj.component.ID.registers.write_register.comment += `\nNote that ${rd} is now written back.\n\n.`;
+        }
+      }
+    }
+    pipelineStates.push(obj)
+  });
+}
+
+export function handlePipeLinePreset(index: number, dynamicsStage: PipelineResponse|null, setCompilationError: (s: string) => void): PipelineState[] | never{
   const pipelineStates: PipelineState[] = [];
 
   if (index === 0) {
@@ -135,7 +512,7 @@ export function handlePipeLinePreset(index: number): PipelineState[] | never{
     // Cycle 4: add x28, x29, x31 in MEM, bubble in EX, sub x5, x28, x6 in ID, nothing in IF
     pipelineStates.push({
       cycle: 4,
-      stages: { IF: undefined, ID: 'sub x5, x28, x6', EX: '        bubble', MEM: 'add x28, x29, x31', WB: undefined },
+      stages: { IF: undefined, ID: 'sub x5, x28, x6', EX: 'bubble (stall)', MEM: 'add x28, x29, x31', WB: undefined },
       hazards: [],
       stageDetails: {
         IF: undefined,
@@ -177,7 +554,7 @@ export function handlePipeLinePreset(index: number): PipelineState[] | never{
     // Cycle 5: add x28, x29, x31 in WB, bubble in MEM, bubble in EX, sub x5, x28, x6 in ID, nothing in IF
     pipelineStates.push({
       cycle: 5,
-      stages: { IF: undefined, ID: 'sub x5, x28, x6', EX: '        bubble', MEM: '        bubble', WB: 'add x28, x29, x31' },
+      stages: { IF: undefined, ID: 'sub x5, x28, x6', EX: 'bubble (stall)', MEM: 'bubble (stall)', WB: 'add x28, x29, x31' },
       hazards: [],
       stageDetails: {
         ID: {
@@ -218,7 +595,7 @@ export function handlePipeLinePreset(index: number): PipelineState[] | never{
     // Cycle 6: bubble in WB, bubble in MEM, sub x5, x28, x6 in EX, nothing in ID, nothing in IF
     pipelineStates.push({
       cycle: 6,
-      stages: { IF: undefined, ID: undefined, EX: 'sub x5, x28, x6', MEM: '        bubble', WB: '        bubble' },
+      stages: { IF: undefined, ID: undefined, EX: 'sub x5, x28, x6', MEM: 'bubble (stall)', WB: 'bubble (stall)' },
       hazards: [],
       stageDetails: {
         ID: undefined,
@@ -249,7 +626,7 @@ export function handlePipeLinePreset(index: number): PipelineState[] | never{
     // Cycle 7: bubble in WB, sub x5, x28, x6 in MEM, nothing in EX, nothing in ID, nothing in IF
     pipelineStates.push({
       cycle: 7,
-      stages: { IF: undefined, ID: undefined, EX: undefined, MEM: 'sub x5, x28, x6', WB: '        bubble' },
+      stages: { IF: undefined, ID: undefined, EX: undefined, MEM: 'sub x5, x28, x6', WB: 'bubble (stall)' },
       hazards: [],
       stageDetails: {
         IF: undefined,
@@ -447,7 +824,7 @@ export function handlePipeLinePreset(index: number): PipelineState[] | never{
     pipelineStates.push({
       cycle: 4,
       stages: { IF: undefined, ID: 'addi x28, x0, 10', EX: 'beq x1, x0, 40', MEM: 'add x30, x31, x5', WB: undefined },
-      hazards: [],
+      hazards: ["The ALU determines that the beq condition is true, causing the PC to jump instead of proceeding to the next instruction."],
       stageDetails: {
         IF: undefined,
         ID: {
@@ -578,9 +955,7 @@ export function handlePipeLinePreset(index: number): PipelineState[] | never{
       component: {
         IF: undefined,
         ID: undefined,
-        EX: {
-          alu: { alu_result: 'ALU: Performs ADDI operation → Val(x29) + 10' }
-        },
+        EX: undefined,
         MEM: undefined,
         WB: null
       }
@@ -1161,7 +1536,7 @@ export function handlePipeLinePreset(index: number): PipelineState[] | never{
           read_register_2: { value: 'N/A', comment: 'Read Register 2: Not used in addi instruction' },
           write_register: { value: 'x28', comment: 'Write Register: Destination register x28 for ALU result' }
         },
-        imm_gen: { value: `Extracts and sign-extends the immediate value from the instruction for use in addi operation.\nInput: The instruction: addi x28, x5, 10\nOutput: The immediate value: 10`},
+        imm_gen: { value: `Extracts and sign-extends the immediate value from the instruction for use in addi operation.\nInput: The instruction: addi x28, x5, 10\nOutput: The immediate addition value of x28`},
       },
       EX: {
         alu: { alu_result: 'ALU: Performs ADDI operation → Val(x0) + 10.' }
@@ -1287,6 +1662,10 @@ export function handlePipeLinePreset(index: number): PipelineState[] | never{
 
   return pipelineStates;
 }
+  else if (index === 4){
+    pipelineConvertResponseToDiagram(pipelineStates, dynamicsStage, setCompilationError)
+    return pipelineStates
+  }
   else{
     throw new Error
   }

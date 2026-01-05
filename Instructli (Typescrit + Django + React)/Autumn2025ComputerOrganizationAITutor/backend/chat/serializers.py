@@ -33,54 +33,60 @@ class ConversationSerializer(ConversationListSerializer):
     def get_messages(self, obj):
         return MessageSerializer(obj.messages.all(), many=True).data
 
-
 class SingleDiagramSerializer(serializers.Serializer):
     command = serializers.CharField()
     command_type = serializers.CharField()
     data_path = serializers.DictField()
     block_data = serializers.DictField()
 
-class PipelineDiagramSerializer(serializers.Serializer):
+class PipelineStageSerializer(serializers.Serializer):
     cycle = serializers.IntegerField()
     stages = serializers.DictField()
     stageDetails = serializers.DictField()
     component = serializers.DictField()
     hazards = serializers.ListField()
 
-class DiagramSerializer(serializers.Serializer):
-    """ Polymorphic serializer for two possible types of diagram context
+class PipelineDiagramSerializer(serializers.Serializer):
+    curr_cycle = serializers.IntegerField()
+    diagram = PipelineStageSerializer(many=True)
+
+class QuizResultSerializer(serializers.Serializer):
+    correctAnswer = serializers.CharField()
+    description = serializers.CharField()
+    givenAnswer = serializers.CharField(allow_null=True)
+    number = serializers.IntegerField()
+
+class ContextSerializer(serializers.Serializer):
+    """ Polymorphic serializer for different types of context
     """
     def to_internal_value(self, data):
-        errors = {}
-
-        try:
-            single = SingleDiagramSerializer(data=data)
-            single.is_valid(raise_exception=True)
-            self._validated_data = single.validated_data
-            self._validated_serializer = single
-            return self._validated_data
-        except ValidationError as e:
-            errors['SingleDiagramSerializer'] = e.detail
-
-        try:
-            pipeline = PipelineDiagramSerializer(data=data, many=True)
-            pipeline.is_valid(raise_exception=True)
-            self._validated_data = pipeline.validated_data
-            self._validated_serializer = pipeline
-            return self._validated_data
-        except ValidationError as e:
-            errors['PipelineDiagramSerializer'] = e.detail
-
-        raise ValidationError({
-            'diagram': 'Input does not match any known diagram type.',
-            'errors': errors
-        })
+        page = self.context.get("page")
+        if page == "single":
+            serializer = SingleDiagramSerializer(data=data)
+        elif page == "pipeline":
+            serializer = PipelineDiagramSerializer(data=data)
+        elif page == "quiz":
+            serializer = QuizResultSerializer(data=data, many=True)
+        elif page == "arithmetic":
+            field = serializers.CharField()
+            return field.run_validation(data)
+        elif page == "calculator":
+            field = serializers.CharField()
+            return field.run_validation(data)
+        else:
+            return None
+        
+        serializer.is_valid(raise_exception=True)
+        return serializer.validated_data
 
 class ChatQuerySerializer(serializers.Serializer):
     message = MessageSerializer()
-    diagram = DiagramSerializer(allow_null=True)
-    diagram_type = serializers.CharField(allow_null=True)
-    curr_cycle = serializers.IntegerField(allow_null=True)
+    page = serializers.CharField(allow_null=True)
+    context = ContextSerializer(allow_null=True)
+
+    def to_internal_value(self, data):
+        self.fields["context"].context["page"] = data.get("page")
+        return super().to_internal_value(data)
 
 class SummaryListSerializer(serializers.ModelSerializer):
     """ Used for serializing summaries without their content

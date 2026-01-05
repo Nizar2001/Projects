@@ -5,6 +5,14 @@ import api, { URL } from "../src/utils/api";
 import ReactMarkdown from "react-markdown";
 import remarkBreaks from "remark-breaks";
 
+
+import { numberSystemsContent } from "../src/app/arithmetic/arithmetic-contents/number-systems/content";
+import { overflowContent } from "../src/app/arithmetic/arithmetic-contents/overflow/content";
+import { arithmeticOperationsContent } from "../src/app/arithmetic/arithmetic-contents/arithmetic-operations/content";
+import { signedRepresentationContent } from "../src/app/arithmetic/arithmetic-contents/signed-representations/content";
+import { arithmeticLandingContent } from "../src/app/arithmetic/content";
+
+
 interface Message {
   role: "user" | "assistant";
   content: string;
@@ -28,7 +36,7 @@ interface ConversationMenuProps {
   onSelectConversation: (id: string) => void;
 }
 
-interface TitleMenuProps {
+interface OptionsMenuProps {
   isOpen: boolean;
   onClose: () => void;
   currentConversation: Conversation | null;
@@ -46,18 +54,18 @@ function DisclaimerScreen({ onAccept }: { onAccept: () => void }) {
         <div className="flex items-center justify-center mb-6">
           <h2 className="text-2xl font-bold text-gray-900">Welcome!</h2>
         </div>
-        
+
         <div className="space-y-4 text-gray-700 mb-8">
           <p>
             This chatbot is an AI-powered assistant designed to help answer your questions and provide information.
           </p>
-          
+
           <p>
-            By proceeding, please acknowledge that while the chatbot strives to provide accurate information, it may not 
+            By proceeding, please acknowledge that while the chatbot strives to provide accurate information, it may not
             always be 100% correct. If something seems off, feel free to double-check and ask for clarification on Piazza.
           </p>
         </div>
-        
+
         <div className="flex justify-center">
           <button
             onClick={onAccept}
@@ -71,29 +79,28 @@ function DisclaimerScreen({ onAccept }: { onAccept: () => void }) {
   );
 }
 
-// top right menu component
-function ConversationMenu({ 
-  isOpen, 
-  onClose, 
-  conversations, 
-  onNewChat, 
-  onSelectConversation 
+function ConversationMenu({
+  isOpen,
+  onClose,
+  conversations,
+  onNewChat,
+  onSelectConversation
 }: ConversationMenuProps) {
   if (!isOpen) return null;
 
   return (
-    <div className="absolute top-10 right-0 bg-white border border-gray-300 rounded-lg shadow-lg z-50 w-64">
+    <div className="absolute top-10 left-0 bg-white border border-gray-300 rounded-lg shadow-lg z-50 w-80">
       <div className="p-2">
         <button
           onClick={onNewChat}
           className="w-full text-left text-black px-3 py-2 hover:bg-gray-100 rounded flex items-center gap-2 cursor-pointer"
         >
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-            <path d="M12 5v14m-7-7h14"/>
+            <path d="M12 5v14m-7-7h14" />
           </svg>
           New Chat
         </button>
-        
+
         {conversations.length > 0 && (
           <>
             <hr className="my-2" />
@@ -116,16 +123,15 @@ function ConversationMenu({
   );
 }
 
-// menu component of current conversation
-function TitleMenu({ 
-  isOpen, 
-  onClose, 
-  currentConversation, 
-  onRename, 
-  onDelete, 
-  onSummarize, 
+function OptionsMenu({
+  isOpen,
+  onClose,
+  currentConversation,
+  onRename,
+  onDelete,
+  onSummarize,
   summarizing
-}: TitleMenuProps) {
+}: OptionsMenuProps) {
   const [isRenaming, setIsRenaming] = useState(false);
   const [newTitle, setNewTitle] = useState("");
 
@@ -153,7 +159,7 @@ function TitleMenu({
 
   if (isRenaming) {
     return (
-      <div className="absolute top-10 left-0 bg-white text-black border border-gray-300 rounded-lg shadow-lg z-50 w-64 p-3">
+      <div className="absolute top-10 right-0 bg-white text-black border border-gray-300 rounded-lg shadow-lg z-50 w-64 p-3">
         <div className="space-y-2">
           <input
             type="text"
@@ -186,7 +192,7 @@ function TitleMenu({
   }
 
   return (
-    <div className="absolute top-10 left-0 bg-white border border-gray-300 rounded-lg shadow-lg z-50 w-48">
+    <div className="absolute top-10 right-0 bg-white border border-gray-300 rounded-lg shadow-lg z-50 w-48">
       <div className="p-2">
         <button
           onClick={() => setIsRenaming(true)}
@@ -199,11 +205,11 @@ function TitleMenu({
           className="w-full text-left text-black px-3 py-2 hover:bg-gray-100 rounded cursor-pointer"
           disabled={summarizing}
         >
-          {summarizing 
-          ? "Summarizing..." 
-          : currentConversation.has_summary 
-            ? "Resummarize" 
-            : "Summarize"}
+          {summarizing
+            ? "Summarizing..."
+            : currentConversation.has_summary
+              ? "Resummarize"
+              : "Summarize"}
         </button>
         <button
           onClick={() => onDelete(currentConversation.id)}
@@ -232,11 +238,11 @@ const ChatBot = forwardRef<ChatBotRef>((props, ref) => {
 
   // Menu states
   const [conversationMenuOpen, setConversationMenuOpen] = useState(false);
-  const [titleMenuOpen, setTitleMenuOpen] = useState(false);
+  const [optionsMenuOpen, setOptionsMenuOpen] = useState(false);
 
   // Refs for menu containers and trigger buttons
   const conversationMenuRef = useRef<HTMLDivElement>(null);
-  const titleMenuRef = useRef<HTMLDivElement>(null);
+  const optionsMenuRef = useRef<HTMLDivElement>(null);
   const conversationButtonRef = useRef<HTMLButtonElement>(null);
   const titleButtonRef = useRef<HTMLButtonElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -271,7 +277,7 @@ const ChatBot = forwardRef<ChatBotRef>((props, ref) => {
       loadCurrentConversation();
     }
   }, [disclaimerAccepted]);
-  
+
   useEffect(() => {
     // Reset textarea height on mount and when input is cleared
     if (textareaRef.current) {
@@ -346,7 +352,7 @@ const ChatBot = forwardRef<ChatBotRef>((props, ref) => {
   // ───── Create new chat ──────────────────────────────────────────────────
   const createNewChat = async () => {
     try {
-      await api.post("/api/chat/new-chat");      
+      await api.post("/api/chat/new-chat");
       await loadConversations();
       await loadCurrentConversation();
       setConversationMenuOpen(false);
@@ -359,16 +365,16 @@ const ChatBot = forwardRef<ChatBotRef>((props, ref) => {
   // ───── Rename conversation ──────────────────────────────────────────────
   const renameConversation = async (id: string, newTitle: string) => {
     if (!currentConversation) return;
-    
+
     try {
       await api.post(`/api/chat/rename-conversation`, {
         id: id,
         name: newTitle,
       });
-      
+
       setCurrentConversation({ ...currentConversation, title: newTitle });
       await loadConversations();
-      setTitleMenuOpen(false);
+      setOptionsMenuOpen(false);
     } catch (err) {
       console.error("Failed to rename conversation:", err);
       setError("Failed to rename conversation");
@@ -378,14 +384,14 @@ const ChatBot = forwardRef<ChatBotRef>((props, ref) => {
   // ───── Delete conversation ──────────────────────────────────────────────
   const deleteConversation = async (id: string) => {
     if (!currentConversation) return;
-    
+
     try {
       await api.post(`/api/chat/delete-conversation`, {
         id: id,
       });
       await loadConversations();
       await loadCurrentConversation();
-      setTitleMenuOpen(false);
+      setOptionsMenuOpen(false);
     } catch (err) {
       console.error("Failed to delete conversation:", err);
       setError("Failed to delete conversation");
@@ -397,7 +403,7 @@ const ChatBot = forwardRef<ChatBotRef>((props, ref) => {
     setSummarizing(true);
 
     try {
-      await api.post("/api/chat/conversation-summary", {id: id});
+      await api.post("/api/chat/conversation-summary", { id: id });
       setShowSummaryNotification(true);
       setTimeout(() => {
         setShowSummaryNotification(false);
@@ -422,6 +428,7 @@ const ChatBot = forwardRef<ChatBotRef>((props, ref) => {
 
   // ───── Send prompt & handle response ─────────────────────────────────────
   const streamAssistantResponse = (query_id: string) => {
+    console.log(query_id);
     return new Promise((resolve, reject) => {
       const tempAssistantResponse: Message = { role: "assistant", content: "" };
       setMessages((prev) => [...prev, tempAssistantResponse]);
@@ -457,38 +464,103 @@ const ChatBot = forwardRef<ChatBotRef>((props, ref) => {
     });
   };
 
+  const getQueryContext = () => {
+    const path = window.location.pathname;
+    try {
+      switch (path) {
+        case "/single-processor": {
+          const diagram = JSON.parse(localStorage.getItem("singleDiagram") || 'null');
+          return {
+            page: "single",
+            context: diagram,
+          }
+        }
+        case "/pipeline-processor": {
+          const diagram = JSON.parse(localStorage.getItem("pipelineDiagram") || 'null');
+          const curr_cycle = localStorage.getItem("currCycle");
+          return {
+            page: "pipeline",
+            context: diagram ? { diagram, curr_cycle, } : null,
+          };
+        }
+        case "/quiz":{
+          const quizResult = JSON.parse(localStorage.getItem("quizResult") || 'null');
+          return {
+            page: "quiz",
+            context: quizResult
+          }
+        }
+        case "/arithmetic": {
+          return {
+            page: "arithmetic",
+            context: arithmeticLandingContent,
+          }
+        }
+        case "/arithmetic/arithmetic-contents/number-systems": {
+          return {
+            page: "arithmetic",
+            context: numberSystemsContent,
+          }
+        }
+        case "/arithmetic/arithmetic-contents/overflow": {
+          return {
+            page: "arithmetic",
+            context: overflowContent,
+          }
+        }
+        case "/arithmetic/arithmetic-contents/arithmetic-operations": {
+          return {
+            page: "arithmetic",
+            context: arithmeticOperationsContent,
+          }
+        }
+        case "/arithmetic/arithmetic-contents/signed-representations": {
+          return {
+            page: "arithmetic",
+            context: signedRepresentationContent,
+          }
+        }
+        case "/arithmetic/arithmetic-contents/arithmetic-calculator": {
+          const context = localStorage.getItem('calculatorState');
+          return {
+            page: "calculator",
+            context: context,
+          };
+        }
+        default: {
+          return {
+            page: path,
+            context: null,
+          }
+        }
+      }
+    } catch (err) {
+      console.error(err);
+    }
+  }
+
   const sendUserQuery = async (inputText: string) => {
     try {
-      let diagramString = null;
-      let diagramType = null;
-      let currCycle = null;
-
-      if (window.location.pathname == "/single-processor") {
-        diagramString = localStorage.getItem("singleDiagram");
-        diagramType = "single";
-      } else if (window.location.pathname == "/pipeline-processor") {
-        diagramString = localStorage.getItem("pipelineDiagram");
-        currCycle = localStorage.getItem("currCycle");
-        diagramType = "pipeline";
-      }
-
-      const diagram = diagramString ? JSON.parse(diagramString) : null;
+      const context = getQueryContext();
       const res = await api.post("/api/chat/query", {
         message: {
           role: "user",
           content: inputText,
         },
-        diagram: diagram,
-        diagram_type: diagramType,
-        curr_cycle: currCycle,
+        page: context?.page,
+        context: context?.context,
       });
-      
+
       return res.data.cache_key;
+
     } catch (err) {
+      // Log the actual error for easier debugging
+      console.error("Failed to send user query:", err);
       setError("Failed to cache user query.");
       return null;
     }
   };
+
 
   const getResponse = async (inputText: string) => {
     setResponseLoading(true);
@@ -546,28 +618,28 @@ const ChatBot = forwardRef<ChatBotRef>((props, ref) => {
       if (conversationMenuOpen) {
         const isClickInConversationMenu = conversationMenuRef.current?.contains(target);
         const isClickOnConversationButton = conversationButtonRef.current?.contains(target);
-        
+
         if (!isClickInConversationMenu && !isClickOnConversationButton) {
           setConversationMenuOpen(false);
         }
       }
 
       // Check if click is outside title menu
-      if (titleMenuOpen) {
-        const isClickInTitleMenu = titleMenuRef.current?.contains(target);
+      if (optionsMenuOpen) {
+        const isClickInOptionsMenu = optionsMenuRef.current?.contains(target);
         const isClickOnTitleButton = titleButtonRef.current?.contains(target);
-        
-        if (!isClickInTitleMenu && !isClickOnTitleButton) {
-          setTitleMenuOpen(false);
+
+        if (!isClickInOptionsMenu && !isClickOnTitleButton) {
+          setOptionsMenuOpen(false);
         }
       }
     };
 
-    if (conversationMenuOpen || titleMenuOpen) {
+    if (conversationMenuOpen || optionsMenuOpen) {
       document.addEventListener('mousedown', handleClickOutside);
       return () => document.removeEventListener('mousedown', handleClickOutside);
     }
-  }, [conversationMenuOpen, titleMenuOpen]);
+  }, [conversationMenuOpen, optionsMenuOpen]);
 
   if (isLoadingDisclaimer) {
     return (
@@ -585,92 +657,91 @@ const ChatBot = forwardRef<ChatBotRef>((props, ref) => {
     <div className="relative w-full max-h-screen border-l bg-[#D9D9D9] flex flex-col h-full p-4">
       {/* Header */}
       <div className="flex items-center justify-between pb-2 border-b border-gray-500 relative">
-        
+
         {/* Current conversation title or default */}
-        <div className="relative" ref={titleMenuRef}>
-          <button
-            ref={titleButtonRef}
-            onClick={(e) => {
-              e.stopPropagation();
-              if (currentConversation) {
-                setTitleMenuOpen(!titleMenuOpen);
-                setConversationMenuOpen(false);
-              }
-            }}
-            className={`text-lg text-gray-900 max-w-80 text-left flex items-center gap-1 cursor-pointer hover:bg-[#BFBFBF] ${
-              currentConversation ? 'px-2 py-1 rounded' : ''
-            }`}
-            disabled={!currentConversation}
-          >
-            <span className="truncate">{currentConversation?.title || "New Chat"}</span>
-            {currentConversation && (
-              <svg 
-                width="20" 
-                height="20" 
-                viewBox="0 0 24 24" 
-                fill="none" 
-                stroke="currentColor" 
-                strokeWidth="2"
-              >
-                <path d="M6 9l6 6 6-6"/>
-              </svg>
-            )}
-          </button>
-
-          {/* Title Menu */}
-          <TitleMenu
-            isOpen={titleMenuOpen}
-            onClose={() => setTitleMenuOpen(false)}
-            currentConversation={currentConversation}
-            onRename={renameConversation}
-            onDelete={deleteConversation}
-            onSummarize={summarizeConversation}
-            summarizing={summarizing}
-          />
-
-          {/* Summary Success Notification - positioned to the right of title */}
-          {showSummaryNotification && (
-            <div className="absolute left-full ml-3 top-1/2 transform -translate-y-1/2 bg-[#36517d] text-white px-3 py-1 rounded-md shadow-lg flex items-center gap-2 z-50 text-sm whitespace-nowrap">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <path d="M20 6L9 17l-5-5"/>
-              </svg>
-              <span>Summarized</span>
-            </div>
-          )}
-        </div>
-
-        {/* New chat button */}
         <div className="relative" ref={conversationMenuRef}>
           <button
             ref={conversationButtonRef}
             onClick={(e) => {
               e.stopPropagation();
-              setConversationMenuOpen(!conversationMenuOpen);
-              setTitleMenuOpen(false);
+              if (currentConversation) {
+                setConversationMenuOpen(!conversationMenuOpen);
+                setOptionsMenuOpen(false);
+              }
             }}
-            className={`w-10 h-10 transition-colors duration-200 flex items-center justify-center cursor-pointer rounded ${
-              conversationMenuOpen 
-                ? 'bg-[#BFBFBF]' 
-                : 'bg-[#D9D9D9] hover:bg-[#BFBFBF]'
-            }`}
-            title="See chats"
+            className={`text-lg text-gray-900 max-w-80 text-left flex items-center gap-1 cursor-pointer hover:bg-[#BFBFBF] ${currentConversation ? 'px-2 py-1 rounded' : ''}
+            ${conversationMenuOpen ? 'bg-[#BFBFBF]' : 'bg-[#D9D9D9] hover:bg-[#BFBFBF]'}`}
+            disabled={!currentConversation}
           >
-            <svg width="30" height="30" viewBox="0 0 25 25" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <g strokeWidth="5"/>
-              <g strokeLinecap="round" strokeLinejoin="round"/>
-              <g>
-                <path d="M7.5 16.5H9.5V20.5L13.5 16.5H17.5C18.6046 16.5 19.5 15.6046 19.5 14.5V8.5C19.5 7.39543 18.6046 6.5 17.5 6.5H7.5C6.39543 6.5 5.5 7.39543 5.5 8.5V14.5C5.5 15.6046 6.39543 16.5 7.5 16.5Z" stroke="#212121" strokeWidth="1.2"/>
-              </g>
-            </svg>
+            <span className="truncate">{currentConversation?.title || "New Chat"}</span>
+            {currentConversation && (
+              <svg
+                width="20"
+                height="20"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+              >
+                <path d="M6 9l6 6 6-6" />
+              </svg>
+            )}
           </button>
 
-          {/* Conversation Menu */}
           <ConversationMenu
             isOpen={conversationMenuOpen}
             onClose={() => setConversationMenuOpen(false)}
             conversations={conversations}
             onNewChat={createNewChat}
             onSelectConversation={selectConversation}
+          />
+
+          {/* Summary Success Notification - positioned to the right of title */}
+          {showSummaryNotification && (
+            <div className="absolute left-full ml-3 top-1/2 transform -translate-y-1/2 bg-[#36517d] text-white px-3 py-1 rounded-md shadow-lg flex items-center gap-2 z-50 text-sm whitespace-nowrap">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M20 6L9 17l-5-5" />
+              </svg>
+              <span>Summarized</span>
+            </div>
+          )}
+        </div>
+
+        <div className="relative" ref={optionsMenuRef}>
+          <button
+            ref={titleButtonRef}
+            onClick={(e) => {
+              e.stopPropagation();
+              setOptionsMenuOpen(!optionsMenuOpen);
+              setConversationMenuOpen(false);
+            }}
+            className={`w-5 h-10 transition-colors duration-200 flex items-center justify-center cursor-pointer rounded ${optionsMenuOpen
+              ? 'bg-[#BFBFBF]'
+              : 'bg-[#D9D9D9] hover:bg-[#BFBFBF]'
+              }`}
+            title="See chats"
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="24"
+              height="24"
+              fill="black"
+              viewBox="0 0 24 24"
+            >
+              <circle cx="12" cy="5" r="2" />
+              <circle cx="12" cy="12" r="2" />
+              <circle cx="12" cy="19" r="2" />
+            </svg>
+          </button>
+
+          <OptionsMenu
+            isOpen={optionsMenuOpen}
+            onClose={() => setOptionsMenuOpen(false)}
+            currentConversation={currentConversation}
+            onRename={renameConversation}
+            onDelete={deleteConversation}
+            onSummarize={summarizeConversation}
+            summarizing={summarizing}
           />
         </div>
       </div>

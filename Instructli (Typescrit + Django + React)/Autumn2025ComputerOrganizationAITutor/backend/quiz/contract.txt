@@ -1,0 +1,327 @@
+Create Question (DONE 10/10)
+POST /api/quiz/questions/
+
+Input:
+{
+  "question_string": "What is the purpose of the ALU in a RISC-V processor?",
+  "type": "multiple_choice",
+  "answer": {
+    "correct_answer": "To perform arithmetic and logical operations",
+    "options": [
+      "To perform arithmetic and logical operations",
+      "To store data temporarily", 
+      "To fetch instructions from memory",
+      "To manage pipeline stages"
+    ]
+  },
+  "tag": ["alu"],
+  "is_published": true,
+  "difficulty": "easy"
+}
+
+Output
+{
+  "id": 1,
+  "question_string": "What is the purpose of the ALU in a RISC-V processor?",
+  "type": "multiple_choice",
+  "answer": {
+    "correct_answer": "To perform arithmetic and logical operations",
+    "options": [
+      "To perform arithmetic and logical operations",
+      "To store data temporarily",
+      "To fetch instructions from memory", 
+      "To manage pipeline stages"
+    ]
+  },
+  "tag": ["alu"],
+  "is_published": true,
+  "created_at": "2024-01-15T10:30:00Z",
+  "updated_at": "2024-01-15T10:30:00Z",
+  "difficulty": "easy"
+}
+
+Get all questions (DONE 10/10)
+GET /api/quiz/questions/
+
+Input:
+ {
+    "tag": "alu",                # optional
+    "type": "multiple_choice",   # optional
+    "difficulty": "easy",        # optional
+    "is_published": "true",      # optional
+    "search": "keyword",         # optional
+    "ordering": "-created_at"    # optional
+}
+
+Output (Array of Questions):
+[
+  {
+    "id": 1,
+    "question_string": "What is the purpose of the ALU in a RISC-V processor?",
+    "type": "multiple_choice",
+    "answer": {
+      "correct_answer": "To perform arithmetic and logical operations",
+      "options": ["...", "...", "...", "..."]
+    },
+    "tag": ["alu"],
+    "is_published": true,
+    "created_at": "2024-01-15T10:30:00Z",
+    "updated_at": "2024-01-15T10:30:00Z",
+    "difficulty": "easy"
+  },
+  {
+    "id": 2,
+    "question_string": "True or False: Data hazards can be resolved using forwarding.",
+    "type": "true_false",
+    "answer": "true",
+    "tag": ["pipeline"],
+    "is_published": true,
+    "created_at": "2024-01-15T11:00:00Z",
+    "updated_at": "2024-01-15T11:00:00Z",
+    "difficulty": "medium"
+  }
+]
+
+Get questions by ID (DONE 10/10)
+GET /api/quiz/questions/{id}/
+
+Input: -
+
+Output:
+{
+  "id": 1,
+  "question_string": "What is the purpose of the ALU in a RISC-V processor?",
+  "type": "multiple_choice",
+  "answer": {
+    "correct_answer": "To perform arithmetic and logical operations",
+    "options": [
+      "To perform arithmetic and logical operations",
+      "To store data temporarily",
+      "To fetch instructions from memory",
+      "To manage pipeline stages"
+    ]
+  },
+  "tag": "alu",
+  "is_published": true,
+  "created_at": "2024-01-15T10:30:00Z",
+  "updated_at": "2024-01-15T10:30:00Z",
+  "difficulty": "easy"
+}
+
+Update questions (DONE 10/10)
+PUT /api/quiz/questions/{id}/
+PATCH /api/quiz/questions/{id}/
+
+Input: Same as create, but all fields optional for PATCH
+
+Output: Same as get question by ID
+
+Delete questions (DONE 10/10)
+DELETE /api/quiz/questions/{id}/
+
+input : -
+
+Output: -
+
+Get available tags (DONE 10/10)
+GET /api/quiz/tags/
+
+Input: -
+Output: 
+[
+  {
+    "tag": "alu",
+    "question_count": 25,
+    "published_count": 20
+  },
+  {
+    "tag": "pipeline", 
+    "question_count": 30,
+    "published_count": 28
+  },
+  {
+    "tag": "risc-v",
+    "question_count": 45,
+    "published_count": 40
+  },
+  {
+    "tag": "memory",
+    "question_count": 15,
+    "published_count": 12
+  }
+]
+
+Quiz generation by filter (DONE 10/10)
+POST /api/quiz/questions/by-filter/
+
+Input:
+{
+  "tags": ["alu", "pipeline"],
+  "difficulty": ["easy", "medium"],  // optional
+  "type": ["multiple_choice", "true_false"],  // optional
+  "count": 10,  // number of questions to return
+  "exclude_ids": [1, 5, 10]  // optional, exclude specific questions
+}
+
+Query Params (optional):
+- render=true | false (default false)
+
+Output (render=false, default):
+[
+  {
+    "id": 2,
+    "question_string": "True or False: Data hazards can be resolved using forwarding.",
+    "type": "true_false",
+    "answer": "true",
+    "tag": "pipeline",
+    "is_published": true,
+    "created_at": "2024-01-15T11:00:00Z",
+    "updated_at": "2024-01-15T11:00:00Z",
+    "difficulty": "medium"
+  },
+  {
+    "id": 3,
+    "question_string": "Convert $1#random_hex_len(4)# into binary number.",
+    "type": "short_answer",
+    "answer": "#hex_to_binary($1)#",
+    "tag": ["numeric representation"],
+    "is_published": true,
+    "created_at": "2024-01-15T10:30:00Z",
+    "updated_at": "2024-01-15T10:30:00Z",
+    "difficulty": "easy"
+  }
+]
+
+Output (render=true):
+[
+  {
+    "id": 12,
+    "question_string": "Convert $1#random_hex_len(4)# into binary number.",
+    "type": "short_answer",
+    "tag": ["numeric representation"],
+    "difficulty": "easy",
+    "is_published": true,
+    "rendered_question": "Convert 3A7F into binary number.",
+    "rendered_answer": "0011101001111111",
+    "variables": { "1": "3A7F" }
+  }
+]
+
+Notes:
+- When render=true, the response omits raw "answer" content and instead includes "rendered_question", "rendered_answer", and "variables".
+- When render=false, the response matches stored fields as before.
+
+Publish Question (DONE 10/10)
+PATCH /api/quiz/questions/{id}/publish/
+
+Input: -
+(No input required - toggles the current publish status)
+
+Output:
+{
+  "id": 1,
+  "question_string": "What is the purpose of the ALU in a RISC-V processor?",
+  "type": "multiple_choice",
+  "answer": {
+    "correct_answer": "To perform arithmetic and logical operations",
+    "options": ["...", "...", "...", "..."]
+  },
+  "tag": ["alu"],
+  "is_published": true,
+  "created_at": "2024-01-15T10:30:00Z",
+  "updated_at": "2024-01-15T10:30:00Z",
+  "difficulty": "easy"
+}
+
+Get Quiz Statistics (DONE 10/10)
+GET /api/quiz/stats/
+
+Input: -
+
+Output:
+{
+  "total_questions": 150,
+  "published_questions": 120,
+  "unpublished_questions": 30,
+  "by_difficulty": {
+    "easy": 60,
+    "medium": 70,
+    "hard": 20
+  },
+  "by_type": {
+    "multiple_choice": 80,
+    "short_answer": 40,
+    "true_false": 20,
+    "fill_blank": 10
+  }
+}
+
+Get Random Questions (DONE 10/10)
+GET /api/quiz/random/
+
+Input:
+{
+  "difficulty": "easy",        // optional
+  "type": "multiple_choice",   // optional
+  "limit": 10                  // optional, default: 10
+}
+
+Query Params (optional):
+- render=true | false (default false)
+
+Output (render=false, default):
+[
+  {
+    "id": 1,
+    "question_string": "What is the purpose of the ALU in a RISC-V processor?",
+    "type": "multiple_choice",
+    "answer": {
+      "correct_answer": "To perform arithmetic and logical operations",
+      "options": ["...", "...", "...", "..."]
+    },
+    "tag": ["alu"],
+    "is_published": true,
+    "created_at": "2024-01-15T10:30:00Z",
+    "updated_at": "2024-01-15T10:30:00Z",
+    "difficulty": "easy"
+  }
+]
+
+Output (render=true):
+[
+  {
+    "id": 12,
+    "question_string": "Convert $1#random_hex_len(4)# into binary number.",
+    "type": "short_answer",
+    "tag": ["numeric representation"],
+    "difficulty": "easy",
+    "is_published": true,
+    "rendered_question": "Convert 3A7F into binary number.",
+    "rendered_answer": "0011101001111111",
+    "variables": { "1": "3A7F" }
+  }
+]
+
+Notes:
+- Same semantics as by-filter: render=true adds rendered fields; render=false returns stored fields only.
+
+Get Available Tags (DONE)
+GET /api/quiz/tags/
+
+Input: -
+
+Output:
+[
+  {
+    "tag": "alu",
+    "question_count": 15,
+    "published_count": 12
+  },
+  {
+    "tag": "pipeline",
+    "question_count": 8,
+    "published_count": 6
+  }
+]
+
+

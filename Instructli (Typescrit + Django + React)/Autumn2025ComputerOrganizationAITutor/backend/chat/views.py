@@ -26,6 +26,7 @@ def send_message(request):
     """
     serializer = ChatQuerySerializer(data=request.data)
     if not serializer.is_valid():
+        print(serializer.error_messages)
         return Response(serializer.errors, status=400)
 
     cache_key = str(uuid.uuid4()) 
@@ -53,8 +54,8 @@ def get_response(request, query_id):
     
     data = cached["data"]
     message = data["message"]
-    diagram = data["diagram"]
-    diagram_type = data["diagram_type"]
+    page = data["page"]
+    context = data["context"]
 
     # ───────────────────────── create new message ────────────────────────────
     conversation = user.current_conversation
@@ -66,21 +67,19 @@ def get_response(request, query_id):
 
     # ─────────────── adjust retrieval and diagram prompts ────────────────────
     search_query = message["content"]
-    page_description = ""
-    if diagram:
-        if diagram_type == "single":
-            page_description = "**The user is viewing a single cycle processor diagram.**\n"
+    if context:
+        if page == "single":
             search_query = (
                 f"Answer this for **single cycle processors**: \n{search_query}"
-                f"\nCommand type: {diagram["command_type"]}"
-                f"\nCommand: {diagram["command"]}"
+                f"\nCommand type: {context["command_type"]}"
+                f"\nCommand: {context["command"]}"
             )
-        else:
-            page_description = (
-                "**The user is viewing a pipelined processor diagram."
-                f" The diagram is currently on cycle {data["curr_cycle"]}.**\n"
-            )
-            search_query += "\nPipelined processor diagram representation: " + str(diagram)
+        elif page == "pipeline":
+            search_query += "\nPipelined processor diagram representation: " + str(context)
+        elif page == "quiz":
+            search_query += "\nQuestions to answer: " + str(context)
+        elif page in ["arithmetic", "numbersystems", "overflow", "operations", "signed"]:
+            search_query += "\nArithmetic HTML Content:\n" + str(context)
 
     # ────────────────────── RAG document retrieval ───────────────────────────
     results = r2r.retrieval.search(
@@ -92,27 +91,33 @@ def get_response(request, query_id):
     documents = {i: result.text for i, result in enumerate(results)}
 
     # ───────────── generate and return streaming response ────────────────────
+    prompt_map = {
+        "single": "pmpt_691ff6a2eae88195b9926e8f3e0784650548c2a1c6c3c966",
+        "pipeline": "pmpt_691ff7c03be48195bcac24d45c86640d01cb93a44eeddd87",
+        "quiz": "pmpt_6924b4a0e3f48195a119bcd0260d72440584b616b8040140",
+        "arithmetic": "pmpt_692740b000408193a5779d7f911c303404fdf20827616575",
+        "calculator": "pmpt_6927c02d190c8193a29100082b33980e0748cdb8b20a70f0",
+    }
     messages = MessageSerializer(conversation.messages.all(), many=True).data
     def generate():
         try:
             stream = openai.responses.create(
                 model="gpt-4.1-mini",
                 prompt={
-                    "id": "pmpt_68968a4abf488194908e9436a2f5a96e09be47d0ea020465",
+                    "id": prompt_map.get(page, ""),
                     "variables": {
                         "documents": str(documents),
-                        "diagram": page_description + str(diagram),
+                        "context": str(context),
                     },
                 },
                 input=messages,
                 stream=True,
             )
             for event in stream:
-
                 if event.type == "response.output_text.delta":
-                    yield f"data: {event.delta.replace("\n", "\\n")}\n\n"
+                    escaped_delta = event.delta.replace('\n', '\\n')
+                    yield f"data: {escaped_delta}\n\n"
                 elif event.type == "response.completed":
-      
                     Message.objects.create(
                         conversation=conversation,
                         role="assistant",

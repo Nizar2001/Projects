@@ -35,7 +35,7 @@ def github_login_redirect(request):
     request.session.flush()
     request.session.cycle_key()
 
-    redirect_url = f"https://www.instructli.app/auth/callback?access={access_token}&refresh={refresh_token}"
+    redirect_url = f"http://localhost:3000/auth/callback?access={access_token}&refresh={refresh_token}"
     return HttpResponseRedirect(redirect_url)
 
 @api_view(['GET'])

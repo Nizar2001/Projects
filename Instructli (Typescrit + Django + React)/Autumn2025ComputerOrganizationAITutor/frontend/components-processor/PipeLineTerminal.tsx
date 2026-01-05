@@ -4,43 +4,61 @@ import React, { useEffect, useState } from "react";
 
 interface PipeLineTerminalProps {
   code: string;
+  currCycle: number;
+  asmCode: string;
+  onAsmCodeChange: (newAsmCode: string) => void
   onCodeChange: (newCode: string) => void;
   onExecute: (index: number) => void;
   onBackward: (currCycle: number) => void;
   onReset: () => void;
-  currCycle: number;
-  onPresetChange: (preset: {index: number, note: string} | null) => void;
+  onPresetChange: (preset: { index: number; note: string } | null) => void;
+  onCompile: () => void;
+  processorType: string;
+  onProcessorChange: (proc: string) => void;
+  compilationError: string
+  registerInit: string
+  setRegisterInit: (register: string) => void
 }
 
-// Define interface for preset objects
 interface Preset {
   index: number;
   label: string;
   code: string;
   note: string;
-  highlight?: { [key: number]: number[] };
+  highlight?: Record<number, number[]>;
 }
 
 export default function Terminal({
   code,
+  currCycle,
+  asmCode,
+  onAsmCodeChange,
   onCodeChange,
   onExecute,
   onBackward,
   onReset,
-  currCycle,
   onPresetChange,
+  onCompile,
+  processorType,
+  onProcessorChange,
+  compilationError,
+  registerInit,
+  setRegisterInit
 }: PipeLineTerminalProps) {
-  const [mounted, setMounted] = React.useState(false);
+  const [mounted, setMounted] = useState(false);
   const [selectedPreset, setSelectedPreset] = useState(3);
 
-  // Presets with detailed explanations
+  // ===== Presets =====
   const presets: Preset[] = [
     {
       index: 0,
       label: "Data Hazard Example",
       code: `add x28, x29, x31
 sub x5, x28, x6`,
-      note: "DATA HAZARD: Suppose that there is no forwarding unit only hazard detection. Instruction 2 depends on x28 from the result of instruction 1 which is only available after WB stage. A bubble is inserted to stall the processor and resolve the data hazard. Initial: x28=0, x29=5, x31=1, x6=4. Final: x28=6, x5=2",
+      note: `DATA HAZARD: Suppose that there is no forwarding unit only hazard detection. 
+Instruction 2 depends on x28 from instruction 1 which is only available after WB stage. 
+A bubble is inserted to stall and resolve the hazard.
+Initial: x28=0, x29=5, x31=1, x6=4. Final: x28=6, x5=2.`,
       highlight: {
         0: [0],
         1: [0, 1],
@@ -57,46 +75,30 @@ sub x5, x28, x6`,
       code: `add x30, x31, x5
 beq x1, x0, 40
 addi x28, x0, 10`,
-      note: `Control Hazard: Suppose that there is no forwarding unit only hazard detection. Result of branch is not available until the EX stage. If the branch is taken, as assumed in this case, a hazard will occur. A bubble is inserted to flush a stage of the pipeline and handle the control hazard.`,
+      note: `CONTROL HAZARD: Suppose that there is no forwarding unit only hazard detection. 
+Result of branch is not available until EX stage. 
+If the branch is taken (as assumed), a hazard occurs, and a bubble is inserted to flush the stage.`,
       highlight: {
         0: [0],
         1: [0, 1],
         2: [0, 1, 2],
         3: [0, 1, 2, 3],
-        4: [0,4],
+        4: [0, 4],
         5: [4],
         6: [4],
         7: [4],
-        8: []
+        8: [],
       },
     },
-//     {
-//       index: 2,
-//       label: "Mixed Hazards Example",
-//       code: `lw x1, 0(x2)
-// beq x1, x3, LABEL
-// add x4, x1, x5
-// LABEL: sub x6, x4, x7`,
-//       note: "MIXED HAZARDS: Data hazard register x1 in beq and add instruction depends on lw instruction, register x4 in sub instruction depends on add instruction. Control hazard due to beq instruction. Assume initial values: x1=0, Mem[Val(x2)]=10, x3=10, x4=5, x5=3, x7=2, x6=0. Due to the presence of hazards many problems arise for example branch should have been taken but it was not taken, as a result final values will be different than expected. Final: x1=10, x4=3, x6=3. Expected: x1=10, x4=5, x6=3",
-//       highlight: {
-//         0: [0],
-//         1: [0, 1],
-//         2: [0, 1, 2],
-//         3: [0, 1, 2, 3],
-//         4: [0, 1, 2, 3],
-//         5: [1, 2, 3],
-//         6: [2,3],
-//         7: [3],
-//         8: []
-//       },
-//     },
     {
       index: 3,
       label: "No Hazards",
       code: `add x28, x29, x31
 li x29, 10
 addi x28, x5, 10`,
-      note: "NO HAZARDS: Each instruction uses different registers or has sufficient separation. Initial: x29=5, x31=3, x5=7. Final: x28=17 (last instruction overwrites), x29=10. Pipeline runs smoothly without stalls.",
+      note: `NO HAZARDS: Instructions use different registers or have sufficient separation. 
+Initial: x29=5, x31=3, x5=7. 
+Final: x28=17 (last instruction overwrites), x29=10.`,
       highlight: {
         0: [0],
         1: [0, 1],
@@ -105,89 +107,107 @@ addi x28, x5, 10`,
         4: [0, 1, 2],
         5: [1, 2],
         6: [2],
-        7: []
+        7: [],
       },
+    },
+    {
+      index: 4,
+      label: "Custom Instruction",
+      code: code,
+      note: "You can enter your code. All registers are initialized to 0.",
     },
   ];
 
+  // ===== Lifecycle =====
   useEffect(() => {
     setMounted(true);
   }, []);
+
   useEffect(() => {
-    if (mounted) {
-      const defaultPreset = presets.find((p) => p.label === "No Hazards");
-      if (defaultPreset) {
-        handlePresetChange({
-          target: { value: "No Hazards" }
-        } as React.ChangeEvent<HTMLSelectElement>);
-      }
+    if (!mounted) return;
+    const defaultPreset = presets.find((p) => p.label === "No Hazards");
+    if (defaultPreset) {
+      handlePresetChange({
+        target: { value: "No Hazards" },
+      } as React.ChangeEvent<HTMLSelectElement>);
     }
-    // Only run once after mount
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [mounted]);
 
   if (!mounted) return null;
 
+  // ===== Handlers =====
   const handlePresetChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    const selectedPreset = presets.find((p) => p.label === e.target.value);
-    if (selectedPreset) {
-      setSelectedPreset(selectedPreset.index);
-      onCodeChange(selectedPreset.code);
-      onReset();
-      onPresetChange({index: selectedPreset.index, note: selectedPreset.note});
-    }
+    const preset = presets.find((p) => p.label === e.target.value);
+    if (!preset) return;
+    setSelectedPreset(preset.index);
+    onCodeChange(preset.code);
+    onReset();
+    onPresetChange({ index: preset.index, note: preset.note });
   };
 
-  const getCurrentPreset = () => {
-    return presets.find((p) => p.index === selectedPreset);
-  };
 
-  // Split code into lines for individual rendering
-  const codeLines = code
-    .split("\n")
-    .map((line) => line.trim())
-    .filter((line) => line.length > 0);
 
-  // Get the highlight indices for the current cycle
-  const currentPreset = getCurrentPreset();
+  const currentPreset = presets.find((p) => p.index === selectedPreset);
   const highlightIndices = currentPreset?.highlight?.[currCycle] || [];
+  const codeLines = code.split("\n").map((line) => line.trim()).filter(Boolean);
 
+  // ===== Render =====
   return (
     <div className="w-full mx-auto flex flex-col">
       <div className="flex-none bg-white pb-3 pt-2">
-        {/* Top bar */}
+        {/* ==== Top Bar ==== */}
         <div className="flex justify-between items-center px-6 py-2 text-sm">
-          {/* Preset selector */}
-          <select
-            className="border border-gray-300 bg-gray-50 text-gray-900 text-sm p-1 rounded focus:outline-none"
-            onChange={handlePresetChange}
-            defaultValue="No Hazards"
-          >
-            <option value="" disabled>
-              Select a preset...
-            </option>
-            {presets.map((preset) => (
-              <option key={preset.label} value={preset.label}>
-                {preset.label}
-              </option>
-            ))}
-          </select>
-
-          {/* Buttons */}
-          <div className="flex space-x-2 text-blue-600">
-            <button
-              onClick={onReset}
-              className="hover:underline cursor-pointer"
+          <div className="flex space-x-3 items-center">
+            {/* Preset Selector */}
+            <select
+              className="border border-gray-300 bg-gray-50 text-gray-900 text-sm p-1 rounded focus:outline-none"
+              onChange={handlePresetChange}
+              defaultValue="No Hazards"
             >
+              <option value="" disabled>
+                Select a preset...
+              </option>
+              {presets.map((p) => (
+                <option key={p.index} value={p.label}>
+                  {p.label}
+                </option>
+              ))}
+            </select>
+
+            {/* Processor Selector */}
+            {selectedPreset == 4 && <select
+              className="border border-gray-300 bg-gray-50 text-gray-900 text-sm p-1 rounded focus:outline-none"
+              value={processorType}
+              onChange={(e) => onProcessorChange(e.target.value)}
+            >
+              <option value="RV32_5S_NO_FW_HZ">RV32_5S_NO_FW_HZ</option>
+              <option value="RV32_5S_NO_HZ">RV32_5S_NO_HZ</option>
+              <option value="RV32_5S_NO_FW">RV32_5S_NO_FW</option>
+              <option value="RV32_5S">RV32_5S</option>
+            </select>}
+
+            {/* Compile Button (only in Custom mode) */}
+            {selectedPreset === 4 && (
+              <button
+                onClick={() => onCompile()}
+                className="px-2 py-1 text-xs bg-blue-600 text-white rounded hover:bg-blue-700 transition"
+              >
+                Compile
+              </button>
+            )}
+          </div>
+
+          {/* Control Buttons */}
+          <div className="flex space-x-2 text-blue-600">
+            <button onClick={onReset} className="hover:underline cursor-pointer">
               Reset
             </button>
             <span>|</span>
             <button
               onClick={() => onBackward(currCycle)}
               className={`hover:underline cursor-pointer ${
-                selectedPreset === -1
-                  ? "opacity-50 cursor-not-allowed"
-                  : ""
+                selectedPreset === -1 ? "opacity-50 cursor-not-allowed" : ""
               }`}
               disabled={selectedPreset === -1}
             >
@@ -197,9 +217,7 @@ addi x28, x5, 10`,
             <button
               onClick={() => onExecute(selectedPreset)}
               className={`hover:underline cursor-pointer ${
-                selectedPreset === -1
-                  ? "opacity-50 cursor-not-allowed"
-                  : ""
+                selectedPreset === -1 ? "opacity-50 cursor-not-allowed" : ""
               }`}
               disabled={selectedPreset === -1}
             >
@@ -208,41 +226,70 @@ addi x28, x5, 10`,
           </div>
         </div>
 
-        {/* Code lines */}
-        <div className="flex-1 bg-white px-6 overflow-auto relative max-h-32">
-          <div className="border border-gray-300 rounded bg-gray-50">
-            <div
-              className="mx-2 mb-2 text-sm font-mono text-opacity-80 overflow-auto whitespace-pre"
-              style={{
-                lineHeight: "1.5",
-                tabSize: 2,
-              }}
-            >
-              {codeLines.length > 0 ? (
-                codeLines.map((line, index) => {
-                  let bgClass = "";
-                  let textClass = "text-gray-900";
-                  if (highlightIndices.includes(index)) {
-                    bgClass = "bg-gray-200";
-                    textClass = "text-gray-900 font-semibold";
-                  }
-                  return (
-                    <span
-                      key={index}
-                      className={`block px-2 ${bgClass} ${textClass}`}
-                    >
-                      {line}
-                    </span>
-                  );
-                })
-              ) : (
-                <span className="block px-2 text-gray-500 font-semibold">
-                  Select a Preset value
-                </span>
+        {/* ==== Code Area ==== */}
+        <div className="flex-1 bg-white px-6 relative max-h-32">
+          {selectedPreset == 4 ? (
+          <div className="flex gap-4"> {/* Split horizontally */}
+            {/* Left: Assembly Input */}
+            <div className="flex-1">
+              <textarea
+                value={asmCode}
+                onChange={(e) => onAsmCodeChange(e.target.value)}
+                placeholder="Enter your assembly code here..."
+                className="w-full h-30 border border-gray-300 rounded bg-gray-50 font-mono text-sm p-2 resize-none focus:outline-none focus:ring-2 focus:ring-blue-500 overflow-auto text-black"
+                style={{ lineHeight: "1.5", tabSize: 2 }}
+              />
+              {compilationError && (
+                <p className="text-red-500 text-sm font-medium text-center mt-1">
+                  {compilationError}
+                </p>
               )}
-    
+            </div>
+
+            {/* Right: Register Initialization */}
+            <div className="w-1/3"> {/* You can adjust width (e.g., w-1/4 or w-1/2) */}
+              <textarea
+                value={registerInit}
+                onChange={(e) => setRegisterInit(e.target.value)}
+                placeholder="Enter register initializations (e.g. x1=5, x2=10) separated by comma. If leave empty, all register are zero"
+                className="w-full h-30 border border-gray-300 rounded bg-gray-50 font-mono text-sm p-2 resize-none focus:outline-none focus:ring-2 focus:ring-green-500 overflow-auto text-black"
+                style={{ lineHeight: "1.5", tabSize: 2 }}
+              />
+              <p className="text-gray-500 text-xs mt-1 text-center">
+                Example: x1 = 5, x2 = 10
+              </p>
             </div>
           </div>
+        ) : (
+            <div className="border border-gray-300 rounded bg-gray-50">
+              <div
+                className="mx-2 mb-2 text-sm font-mono text-opacity-80 overflow-auto whitespace-pre"
+                style={{ lineHeight: "1.5", tabSize: 2 }}
+              >
+                {codeLines.length ? (
+                  codeLines.map((line, index) => {
+                    const isHighlighted = highlightIndices.includes(index);
+                    return (
+                      <span
+                        key={index}
+                        className={`block px-2 ${
+                          isHighlighted
+                            ? "bg-gray-200 text-gray-900 font-semibold"
+                            : "text-gray-900"
+                        }`}
+                      >
+                        {line}
+                      </span>
+                    );
+                  })
+                ) : (
+                  <span className="block px-2 text-gray-500 font-semibold">
+                    Select a Preset value
+                  </span>
+                )}
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </div>
