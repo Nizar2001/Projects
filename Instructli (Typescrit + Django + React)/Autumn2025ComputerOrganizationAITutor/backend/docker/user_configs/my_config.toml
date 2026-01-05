@@ -1,0 +1,20 @@
+# config file for compose.yaml
+[app]
+fast_llm = "gpt-4o-mini"
+quality_llm = "gpt-4o-mini"
+vlm = "gpt-4o-mini"
+# reasoning_llm = "command-a-03-2025"
+# planning_llm = "command-a-03-2025"
+
+[completion]
+provider = "litellm"
+
+# [embedding]
+# provider = "litellm"
+# base_model = "embed-english-v3.0"
+# base_dimension = 1024
+
+# [completion_embedding]
+# provider = "litellm"
+# base_model = "embed-english-v3.0"
+# base_dimension = 1024

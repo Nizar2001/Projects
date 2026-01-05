@@ -1,0 +1,11 @@
+*.out
+*.vscode
+__pycache__/
+.dockerignore
+*.swp
+.DS_Store
+.idea/
+.venv/
+venv/
+*.env
+db.sqlite3
