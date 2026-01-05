@@ -1,0 +1,39 @@
+BIRD
+a water bird
+1
+0
+
+POISON
+a paralytic venom
+1
+-10
+
+CHEST
+a pirate chest
+2
+0
+
+BOOK
+a copy of an illuminated manuscript
+2
+0
+
+HEALTH_PACK
+a compact medical kit
+3
+30
+
+FOOD
+a snack pack for energy boost
+5
+10
+
+BOMB
+a lethal grenade
+4
+-300
+
+ELIXIR
+a bottle of magical potion
+4
+150

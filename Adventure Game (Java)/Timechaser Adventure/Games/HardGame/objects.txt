@@ -1,0 +1,59 @@
+SEA_SHELLS
+A tiny treasure: seashells
+1
+10
+
+SEA_GLASS
+Smooth beach glass
+1
+0
+
+JELLYFISH
+A venomous jellyfish
+2
+-50
+
+SNAKE
+A lethal snake
+4
+-150
+
+FRUITS
+Delicious fruits
+4
+25
+
+HERB
+A medicine plant
+4
+40
+
+FOOD
+Energetic Food
+9
+30
+
+KEYS
+The car key
+10
+0
+
+BOOK
+A copy of an illuminated manuscript
+10
+0
+
+MEDICINE
+The life-saving medicine
+8
+100
+
+HEALTH_PACK
+A compact medical kit
+8
+50
+
+HCL
+Hydro chloric acid
+8
+-75

@@ -1,0 +1,20 @@
+id,"Q1: From a scale 1 to 5, how complex is it to make this food? (Where 1 is the most simple, and 5 is the most complex)",Q2: How many ingredients would you expect this food item to contain?,Q3: In what setting would you expect this food to be served? Please check all that apply,Q4: How much would you expect to pay for one serving of this food item?,Q5: What movie do you think of when thinking of this food item?,Q6: What drink would you pair with this food item?,"Q7: When you think about this food item, who does it remind you of?",Q8: How much hot sauce would you add to this food item?,Label
+1000000,3,4 to 10,"Week day lunch,Week day dinner,Weekend lunch,Weekend dinner,At a party,Late night snack",$15 to $30,Chef,Coca Cola,"Parents,Siblings",A little (mild),Pizza
+1000001,2,5 to 10,"Week day lunch,Week day dinner,Weekend lunch,Weekend dinner,At a party,Late night snack",$10,Avengers,Water,"Friends,Teachers",A little (mild),Shawarma
+1000002,4,4 to 7,Weekend dinner,$25,Spider-Man,Green tea,Friends,None,Sushi
+1000003,3,4 to 10,"Week day lunch,Weekend dinner,At a party",$15 to $25,The Social Network,Coca Cola,"Parents,Friends",A little (mild),Pizza
+1000004,2,5 to 8,"Week day lunch,Weekend dinner,Late night snack",$10,Deadpool,Water,"Siblings,Friends",None,Shawarma
+1000005,4,4 to 6,"Weekend lunch,Weekend dinner",$20,The Matrix,Matcha tea,"Teachers,Friends",A moderate amount (medium),Sushi
+1000006,2,4 to 8,"Week day lunch,Weekend lunch,Late night snack",$12,The Pursuit of Happyness,Water,"Parents,Siblings",None,Pizza
+1000007,3,6 to 10,"Week day dinner,Weekend dinner",$12,Pulp Fiction,Pepsi,"Friends,Teachers",A little (mild),Shawarma
+1000008,5,5 to 8,"Weekend dinner,At a party",$28,Gladiator,Sake,"Friends,Siblings",A moderate amount (medium),Sushi
+1000009,4,5 to 9,"Week day lunch,Weekend dinner,At a party",$18,The Dark Knight,Orange Juice,"Friends,Siblings",A moderate amount (medium),Pizza
+1000010,2,4 to 7,"Week day lunch,Weekend lunch,Late night snack",$9,Thor,Water,"Parents,Strangers",None,Shawarma
+1000011,3,3 to 6,"Weekend lunch,Weekend dinner",$22,Jurassic Park,Tea,"Teachers,Siblings",A little (mild),Sushi
+1000012,3,7,"Week day lunch,Week day dinner,At a party",$20,"Cloudy with a Chance of Meatballs
+",Coca Cola,Parents,A little (mild),Pizza
+1000013,3,8,"Week day lunch,Week day dinner,At a party",$12,Silo,yogurt,Siblings,A little (mild),Shawarma
+1000014,5,6,week day lunch,$20,Your Name,Coke,Friends,A little (mild),Sushi
+1000015,3,about 10 ingredients,Weekend lunch,20,Italian movies,Coca Cola or pepsi,Friends,A lot (hot),Pizza
+1000016,5,about 4 to 5 ingredients,At a party,5 to 20,Turkish shows,Black Turkish Tea,Friends,A lot (hot),Shawarma
+1000017,5,About 10 ingredients,"Week day lunch,At a party",20 to 50,Korean Movies,cold drink,Strangers,A moderate amount (medium),Sushi

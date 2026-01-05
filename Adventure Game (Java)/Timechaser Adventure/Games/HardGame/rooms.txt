@@ -1,0 +1,96 @@
+1
+Serene beach
+You are standing on a serene beach with soft sands beneath your feet. To the south, the waves playfully meet the shore, while up north, a road unfolds its journey to the west. You can explore east for a rad forest.
+-----
+SOUTH      2
+DOWN	   2
+NORTH      3
+EAST       4
+
+2
+At the shore
+You are at the shore, up north lies the serene beach, inviting tranquility. Be cautious, though—heading south reveals a pit, an unexpected challenge waiting to test your journey.
+-----
+SOUTH      5
+DOWN       5
+UP         1
+NORTH      1
+
+3
+On the road
+You find yourself on a road stretching westward, paving the way for new adventures and discoveries. To the east there's an abandoned car just chilling, like a forgotten memory from back in the day.
+-----
+WEST       6
+SOUTH      1
+DOWN       1
+EAST       8/KEYS
+EAST       11
+
+4
+Inside the forest
+You're in a dense, tree-filled forest with potential dangers. The path is blocked, offering three choices: head north into the unknown, south toward the shore or east toward a menacing cave.
+-----
+NORTH      6
+UP         6
+SOUTH      2
+EAST       7
+
+5
+In the pit
+You fell into a pit and broke every single bone of your body.
+-----
+QUIT       0
+
+6
+Outside a village
+You have arrived at the outskirts of a village. The North brings you to the village entrance, and if you venture East, you'll hit a rad road that leads straight to the beach.
+-----
+NORTH     12/MEDICINE
+NORTH     9
+EAST      3
+
+7
+Inside the cave
+You walked into this dark cave, and bam! A bear jumps you out of nowhere, taking away a whopping 200 health.
+-----
+QUIT      0
+
+8
+Inside the car
+You're in the car, but it's playing hard to start – no engine revving today.
+-----
+WEST      3
+DOWN      3
+
+9
+Inside the village
+You're inside a village where people are suffocating. The life-saving medicine is inside the car on the road. The key is hidden in the attic of the village library.
+-----
+NORTH     10
+UP        10
+SOUTH     6
+
+10
+Inside the library
+You are inside the library. The atmosphere is serenely illuminated by the filtered sunlight through stained glass.
+-----
+SOUTH     9
+DOWN      9
+
+11
+Outside the car
+You are standing outside the car but you don't have the key to unlock it. Grab the key first before you can open the car.
+-----
+FORCED    3
+
+12
+Victory
+Triumphant moment! You've delivered the life-saving medicine in the nick of time, rescuing the village from peril. You're a true hero—congratulations, you've emerged victorious in the game!
+-----
+FORCED    0
+
+15
+Game Over
+You have died!
+-----
+FORCED    0

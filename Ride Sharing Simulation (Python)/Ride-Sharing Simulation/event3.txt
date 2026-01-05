@@ -1,0 +1,19 @@
+# Sample Event List
+
+# The parser will skip empty lines, lines with whitespace only,
+# or those that start with '#'.
+
+# The format for DriverRequest events is:
+# <timestamp> DriverRequest <driver id> <location> <speed>
+# <location> is <row>,<col>
+
+0 RiderRequest Nizar 13,7 18,15 8
+0 RiderRequest Mehr 10,4 4,7 9
+
+0 DriverRequest Ali 4,2 3
+
+
+# The format for RiderRequest events is:
+# <timestamp> RiderRequest <rider id> <origin> <destination> <patience>
+# <origin>, <destination> are <row>,<col>
+
