@@ -10,8 +10,8 @@ This application focuses on **secure backend logic**, **role-based authorization
 To explore all features without multiple logins, use the **Superuser account**.
 
 **Login Credentials**
-- Utorid: `superuser`
-- Password: `password`
+- Utorid: `super01`
+- Password: `pass`
 
 After logging in, you can switch between **Regular User, Cashier, Manager, and Superuser** roles directly from the interface.
 
